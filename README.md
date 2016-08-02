@@ -1,5 +1,5 @@
 # JET
-This is a personal project using tornado as web server and Oracle's JET to build a web APP.
+This is a personal project using <b>tornado</b> as web server and Oracle's JET to build a web APP.
 
 It is aimed at recording some data such as temperature, compute cpu'usage etc. 
 
