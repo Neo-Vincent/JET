@@ -1,0 +1,56 @@
+<html lang="en-us">
+  <head>
+    <title>My Home</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="user-scalable=yes,width=device-width,initial-scale=1.0,maximum-scale=5.0" />
+    <link rel="icon" href="../static/css/images/favicon.ico" type="image/x-icon" />
+
+    <!-- This is the main css file for the default Alta theme -->
+    <link id="css" rel="stylesheet" href="../static/css/libs/oj/v2.0.1/alta/oj-alta-min.css" type="text/css"/>
+
+    <!-- These style classes are for demonstration purposes only. -->
+    <link rel="stylesheet" href="../static/css/demo-alta-patterns-min.css" type="text/css"/>
+
+    <!-- This is where you would add any app specific styling -->
+    <link rel="stylesheet" href="../static/css/override.css" type="text/css"/>
+
+    <!-- RequireJS bootstrap file -->
+    <script data-main="../static/js/main" src="../static/js/libs/require/require.js"></script>
+  </head>
+  <body>
+  
+
+
+   <div id='chart-container'>
+       <div style="padding-left:16px; float: left"><button id= "button1" aria-controls="comboChart"
+            data-bind="click: updateButtonClick,
+                       ojComponent: {component: 'ojButton', label: 'Update values'}">
+    </button></div>
+       <br style="clear: left;"/>
+    <div id="lineChart" data-bind="ojComponent: {
+        component: 'ojChart', 
+        type: 'line',
+        series: lineSeriesValue, 
+        groups: lineGroupsValue, 
+        animationOnDisplay: 'none',
+        animationOnDataChange: 'none',
+        orientation: orientationValue,
+        hoverBehavior: 'dim'
+        }"
+         style="max-width:500px;width:100%;height:350px;">
+    </div>
+    <!-- vertical/horizontal toggle button -->
+    <div id="radioButtonset" data-bind="ojComponent: {component: 'ojButtonset', focusManagement:'none', checked: orientationValue, chroming: 'half'}" 
+             aria-controls="lineChart" aria-label="Choose an orientation." style="max-width:500px;width:100%;">
+            <!-- ko foreach: orientationOptions -->
+              <label data-bind="attr: {for: id}"></label>
+              <input type="radio" name="orientation"
+                   data-bind="value: value, attr: {id: id},
+                   ojComponent: {component: 'ojButton', label: label, 
+                                     icons: {start: icon}, display: 'icons'}"/>
+            <!-- /ko -->
+    </div>
+</div>
+   <div> {{message}}</div>
+  </body>
+</html>

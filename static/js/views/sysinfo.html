@@ -1,0 +1,36 @@
+<!--
+ Copyright (c) 2014, 2016, Oracle and/or its affiliates.
+ The Universal Permissive License (UPL), Version 1.0
+ -->
+<div class="justifyCenter">
+    <div id="masonryLayout" data-bind="ojComponent: {component: 'ojMasonryLayout'}">
+        <div id="templateList" data-bind="template: 'sysInfo'"></div>
+    </div>
+</div>
+
+<!-- this is the template content that is loaded by the MasonryLayout component above  -->
+<script type="text/html" id="sysInfo">
+
+    <div id='chart-container'>
+        <div class="oj-flex oj-flex-items-pad notifytitle">
+            CPU Usage
+        </div>
+        <br style="clear: left;"/>
+        <div id="lineChart" data-bind="ojComponent: {
+        component: 'ojChart',
+        type: 'line',
+        series: SeriesValue,
+        groups: GroupsValue,
+        animationOnDisplay: 'none',
+        animationOnDataChange: 'none',
+        orientation: orientationValue,
+        hoverBehavior: 'dim',
+        title: {text: 'CPU Usage', halign: 'plotAreaCenter'},
+        }"
+             style="max-width:500px;width:100%;height:350px;">
+        </div>
+    </div>
+</script>
+
+
+
