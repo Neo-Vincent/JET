@@ -6,55 +6,7 @@ define(['knockout', 'ojs/ojcore', 'data/data', 'ojs/ojknockout', 'ojs/ojmasonryl
     function (ko, oj, data)
     {
         function ChartModel() {
-            var self = this;
-            self.orientationValue = ko.observable('vertical');
-
-            function addSeries(series, name){
-                self.data.push(series);
-                self.series.push({name:name, items:self.data[self.data.length-1], lineType:"curved"});
-            }
-            //temporary function
-            function error(){
-                console.log("Error!");
-            }
-            /*function updateGroup(val){
-                if(typeof val !== 'undefined'){
-                    if (self.xaxis.length > 60) {
-                        self.xaxis.shift();
-                    }
-                    var date= new Date();
-                    if(self.xaxis[-1]-date.getTime() <10){
-                        return;
-                    }
-                    self.xaxis.push(date.getTime());
-                }
-            }*/
-            function updateValue(sIndex, val){
-                if(sIndex<0 || sIndex>self.data.length){
-                    error();
-                    return null;
-                }
-                if(typeof val !== 'undefined'){
-                    if (self.data[sIndex].length >= 60) {
-                        self.data[sIndex].shift();
-                    }
-
-                    self.data[sIndex].push(val);
-
-                }
-                return self.data;
-            }
-
-            self.data= [];
-            self.series=[];
-            self.xaxis=[];
-            for(var i=0; i<60; i++){
-                self.xaxis.push(60-i);
-            }
-            this.SeriesValue = ko.observableArray(self.series);
-            this.GroupsValue = ko.observableArray(self.xaxis);
-
-            
+            //global section
             function getSysInfo() {
                 $.ajax(
                     {
@@ -68,8 +20,41 @@ define(['knockout', 'ojs/ojcore', 'data/data', 'ojs/ojknockout', 'ojs/ojmasonryl
                         }
                     });
             }
+            //temporary function
+            function error(){
+                console.log("Error!");
+            }
+            var self = this;
+            
+            //CPU Section
+            self.CPUdata= [];
+            self.CPUseries=[];
+            self.CPUxaxis=[];
+            function addCPUSeries(series, name){
+                self.CPUdata.push(series);
+                self.CPUseries.push({name:name, items:self.CPUdata[self.CPUdata.length-1], lineType:"curved"});
+            }
+            function updateCPUValue(sIndex, val){
+                if(sIndex<0 || sIndex>self.CPUdata.length){
+                    error();
+                    return null;
+                }
+                if(typeof val !== 'undefined'){
+                    if (self.CPUdata[sIndex].length >= 60) {
+                        self.CPUdata[sIndex].shift();
+                    }
 
-            function init(){
+                    self.CPUdata[sIndex].push(val);
+
+                }
+                return self.CPUdata;
+            }
+            for(var i=0; i<60; i++){
+                self.CPUxaxis.push(60-i);
+            }
+            this.CPUSeriesValue = ko.observableArray(self.CPUseries);
+            this.CPUGroupsValue = ko.observableArray(self.CPUxaxis);
+            function CPUinit(){
                 $.ajax(
                     {
                         url: '/sysinfo',
@@ -80,17 +65,16 @@ define(['knockout', 'ojs/ojcore', 'data/data', 'ojs/ojknockout', 'ojs/ojmasonryl
                             if(cpu){
                                 console.log(cpu);
                                 for(var i=0; i< cpu.info.logicalCore; i++){
-                                    addSeries([],"CPU"+i);
+                                    addCPUSeries([],"CPU"+i);
                                 }
-                                addSeries([],"CPU");
-                                self.SeriesValue(self.series);
-                                self.GroupsValue(self.xaxis);
-                                console.log(self.data);
+                                addCPUSeries([],"CPU");
+                                self.CPUSeriesValue(self.CPUseries);
+                                self.CPUGroupsValue(self.CPUxaxis);
                             }
                         }
                     });
             }
-            init();
+            CPUinit();
             function getCpuStatus() {
                 $.ajax(
                     {
@@ -105,14 +89,52 @@ define(['knockout', 'ojs/ojcore', 'data/data', 'ojs/ojknockout', 'ojs/ojmasonryl
                                     updateValue(i, cpu.status.cpupercent[i]);
                                     avg+=cpu.status.cpupercent[i];
                                 }
-                                updateValue(self.data.length-1, avg/self.data.length-1);
+                                updateValue(self.CPUdata.length-1, avg/self.CPUdata.length-1);
                                 //updateGroup(cpu.status.cpupercent[0]);
-                                self.SeriesValue(self.series);
+                                self.CPUSeriesValue(self.CPUseries);
                             }
                         }
                     });
             }
-           window.setInterval(getCpuStatus,1000);
+
+            //Disk Section
+            self.diskInfo=[];
+            self.allDiskUsage = [];
+            this.diskUsage = ko.observableArray(self.allDiskUsage);
+            this.diskTitle = ko.observable("Disk Usage: Total 0");
+            var converterFactory = oj.Validation.converterFactory("number");
+            var options = {pattern: '#,##0%'};
+            var converter = converterFactory.createConverter(options);
+            this.converter = ko.observable(converter);
+            function getDiskInfo() {
+                $.ajax(
+                    {
+                        url: '/sysinfo',
+                        type: 'POST',
+                        data: JSON.stringify({"require":["Disk.info"]}),
+                        success: function (jsonResponse) {
+                            var disk = JSON.parse(jsonResponse).Disk;
+                            if(disk){
+                                var total=0;
+                                var free=0;
+                                var used=0;
+                                for(var i=0; i<disk.info.length;i++){
+                                    total+=disk.info[i].total;
+                                    free+=disk.info[i].free*1024*1024;
+                                    used+=disk.info[i].used*1024*1024;
+                                }
+                                self.allDiskUsage.push({name:"used",items:[used]});
+                                self.allDiskUsage.push({name:"free",items:[free]});
+                                //self.diskTitle("Disk Usage: Total " +total);
+                                self.diskUsage = ko.observableArray(self.allDiskUsage);
+                                $("#diskChart").ojChart('option',"title.text", "Disk Usage: Total " +total/1024+"GB");
+                                $("#diskChart").ojChart("refresh");
+                            }
+                        }
+                    });
+            }
+            getDiskInfo();
+         // window.setInterval(getDiskInfo,1000);
 
         }
         return ChartModel;
