@@ -1,0 +1,23 @@
+<div class="justifyCenter">
+    <div id="masonryLayout" data-bind="ojComponent: {component: 'ojMasonryLayout'}">
+        <div id="templateList" data-bind="template: {name:'chart',  foreach: sysInfo, as: 'component'}"></div>
+    </div>
+</div>
+<script type="text/html" id="chart">
+    <div  tabindex="0"  class="oj-masonrylayout-tile-2x1"  data-bind="attr: {id: $data.identifier+'_chart', aria-label= $data.dataType}">
+        <div id="diskChart" data-bind="ojComponent: {
+                component: 'ojChart',
+                type: $data.chartType,
+                series: $data.mySeries,
+                groups: $data.myGroups,
+                animationOnDisplay: 'auto',
+                animationOnDataChange: 'none',
+                hoverBehavior: 'dim',
+                orientation: 'vertical',
+                valueFormats: [{type:'value', converter: ko.toJS($data.converter)},{type:'label', converter: ko.toJS($data.converter)}],
+                title: {text: $data.chartTitle, halign: 'plotAreaCenter'},
+            }"
+             style="max-width:500px;width:100%;height:350px;">
+        </div>
+    </div>
+</script>
