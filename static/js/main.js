@@ -75,7 +75,7 @@ require(['ojs/ojcore',
             ko.amdTemplateEngine.defaultSuffix = ".html";
             var router = oj.Router.rootInstance;
             router.configure({
-                'chart': {label: 'System Information', isDefault: true},
+                'mychart': {label: 'System Information', isDefault: true},
                 'people': {label: 'People'},
                 'organization': {label: 'Organization'},
                 'person': {label: 'Person',
