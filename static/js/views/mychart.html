@@ -5,7 +5,7 @@
 </div>
 <script type="text/html" id="chart">
     <div tabindex="0" class="oj-masonrylayout-tile-2x2" data-bind="attr: {id: identifier, 'aria-label': dataType}">
-        <div id="diskChart" data-bind="ojComponent: {
+        <div data-bind=" ojComponent: {
                 component: 'ojChart',
                 type: chartType,
                 series: mySeries,
@@ -13,12 +13,14 @@
                 animationOnDisplay: 'auto',
                 animationOnDataChange: 'none',
                 hoverBehavior: 'dim',
+                hideAndShowBehavior: showAndHide,
                 orientation: 'vertical',
                 title: chartTitle
-            }"
+            } ,
+            attr :{ id: chartId }  "
              style="max-width:500px;width:100%;height:350px;">
         </div>
         <div><br></div>
-        <div data-bind="html:  otherInfo" style="max-height: 100px;height:100%; max-width: 500px;width:100%"></div>
+        <div data-bind="html: otherInfo " style="max-height: 100px;height:100%; max-width: 500px;width:100%"></div>
     </div>
 </script>

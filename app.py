@@ -1,15 +1,12 @@
+import os.path
+
 import tornado.auth
 import tornado.escape
 import tornado.ioloop
 import tornado.options
 import tornado.web
-import os.path
-import json
-import random
-import pprint
-from  tornado.escape import json_decode
-
 from tornado.options import define, options
+
 from sysInfoHandle import SysInfoHandler
 
 define("port", default=8000, help="run on the given port", type=int)
@@ -39,7 +36,7 @@ class MainHandler(tornado.web.RequestHandler):
 def main():
     tornado.options.parse_command_line()
     app = Application()
-    app.listen(options.port)
+    app.listen(options.port, "0.0.0.0")
     tornado.ioloop.IOLoop.instance().start()
 
 

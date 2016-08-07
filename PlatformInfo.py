@@ -1,11 +1,13 @@
-import psutil
 import platform
-import time
 import threading
+import time
+
+import psutil
 
 
 def obj2dict(f):
     return dict(f._asdict())
+
 
 class CPU(object):
     @staticmethod
@@ -17,18 +19,21 @@ class CPU(object):
 
     @staticmethod
     def get_status():
-        t0=time.time()
+        t0 = time.time()
         ret = dict()
+
         def percent(ret):
             ret["cpupercent"] = psutil.cpu_percent(interval=0.49, percpu=True)
+
         def times(ret):
             cputimes = psutil.cpu_times_percent(interval=0.49, percpu=True)
             ret["cputimes"] = []
             for i in cputimes:
                 ret["cputimes"].append(obj2dict(i))
-        threads=[]
-        threads.append(threading.Thread(target=percent,daemon=True,args=(ret,)))
-        threads.append(threading.Thread(target=times, daemon=True,args=(ret,)))
+
+        threads = []
+        threads.append(threading.Thread(target=percent, daemon=True, args=(ret,)))
+        threads.append(threading.Thread(target=times, daemon=True, args=(ret,)))
         for i in threads:
             i.start()
             i.join()
@@ -60,7 +65,7 @@ def T(val):
 
 class Memory(object):
     @staticmethod
-    def get_mem_info( u="M"):
+    def get_mem_info(u="M"):
         unit = M
         if u == "K" or u == "k":
             unit = K
@@ -157,3 +162,28 @@ class Network(object):
                 new_list.append(obj2dict(j))
             if_addrs[i] = new_list
         return if_addrs
+
+
+def get_adaptable_unit(val):
+    """
+    :param val: a volume of storage or memory with a unit MB (mega Bytes)
+    :return: a tuple (double: new val, string: unit)
+    """
+    large_unit = ["MB", "GB", "TB"]
+    small_unit = ["MB", "KB", "B"]
+    step = 1.
+    if val < 1000:
+        unit = small_unit
+        step = 1 / 1024.
+    else:
+        unit = large_unit
+        step = 1024.
+    for u in unit:
+        if val < 1000:
+            return val, u
+        val = val / step
+
+
+def unit_convector(val, unit, target_unit):
+    convector = {"B": 1, "KB": 1024, "MB": 1048576, "GB": 1073741824, "TB": 1099511627776}
+    return val * convector[unit] / convector[target_unit]
