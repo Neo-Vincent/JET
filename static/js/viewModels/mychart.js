@@ -22,42 +22,47 @@ define(['knockout', 'ojs/ojcore', 'data/data', 'ojs/ojknockout', 'ojs/ojmasonryl
 
         function updateCPUValue(sIndex, val) {
             var cpu = $("#chartcpu");
-            var series = cpu.ojChart("option", "series");
-            if (sIndex < 0 || sIndex > series.length) {
-                return null;
-            }
-            if (typeof val !== 'undefined') {
-                if (series[sIndex].items.length >= 60) {
-                    series[sIndex].items.shift();
+            if(cpu.length>0){
+                var series = cpu.ojChart("option", "series");
+                if (sIndex < 0 || sIndex >= series.length) {
+                    return null;
                 }
-                series[sIndex].items.push(val);
+                if (typeof val !== 'undefined') {
+                    if (series[sIndex].items.length >= 60) {
+                        series[sIndex].items.shift();
+                    }
+                    series[sIndex].items.push(val);
+                }
+                return series;
             }
-            return series;
+
         }
 
         function updateMemValue(memFree, memUsed, swapFree, swapUsed) {
             var mem = $("#chartmemory");
             var series = mem.ojChart("option", "series");
-            var name=series[0].name;
-            var step=1.;
-            if(name.indexOf("GB") >= 0){
-                step=1/1024;
-            }
-            if(name.indexOf("TB") >= 0){
-                step=1/1024/1024;
-            }
-            if(name.indexOf("KB") >= 0){
-                step=1024;
-            }
-            for (var i = 0; i < series.length; i++) {
-                if (series[i].name.indexOf("free") >= 0) {
-                    series[i].items= [memFree*step, swapFree*step];
+            if(typeof series !== "undefined") {
+                var name = series[0].name;
+                var step = 1.;
+                if (name.indexOf("GB") >= 0) {
+                    step = 1 / 1024;
                 }
-                if (series[i].name.indexOf("used") >= 0) {
-                    series[i].items = [memUsed*step, swapUsed*step];
+                if (name.indexOf("TB") >= 0) {
+                    step = 1 / 1024 / 1024;
                 }
+                if (name.indexOf("KB") >= 0) {
+                    step = 1024;
+                }
+                for (var i = 0; i < series.length; i++) {
+                    if (series[i].name.indexOf("free") >= 0) {
+                        series[i].items = [memFree * step, swapFree * step];
+                    }
+                    if (series[i].name.indexOf("used") >= 0) {
+                        series[i].items = [memUsed * step, swapUsed * step];
+                    }
+                }
+                return series;
             }
-            return series;
         }
 
         function ChartModel() {
@@ -80,51 +85,62 @@ define(['knockout', 'ojs/ojcore', 'data/data', 'ojs/ojknockout', 'ojs/ojmasonryl
                 }
 
                 function updateCPU() {
-                    $.ajax(
-                        {
-                            url: '/sysinfo',
-                            type: 'POST',
-                            data: JSON.stringify({"require": ["CPU.status"]}),
-                            success: function (jsonResponse) {
-                                var cpu = JSON.parse(jsonResponse).CPU;
-                                if (cpu) {
-                                    var selector = $("#chartcpu");
-                                    var series = selector.ojChart("option", "series");
-                                    var avg = 0;
-                                    for (var i = 1; i < series.length; i++) {
-                                        updateCPUValue(i, cpu.status.cpupercent[i - 1]);
-                                        avg += cpu.status.cpupercent[i - 1];
+                    var selector = $("#chartcpu");
+                    if (selector.length > 0) {
+                        $.ajax(
+                            {
+                                url: '/sysinfo',
+                                type: 'POST',
+                                data: JSON.stringify({"require": ["CPU.status"]}),
+                                success: function (jsonResponse) {
+                                    var cpu = JSON.parse(jsonResponse).CPU;
+                                    if (cpu) {
+                                        var selector = $("#chartcpu");
+                                        var series = selector.ojChart("option", "series");
+                                        var avg = 0;
+                                        for (var i = 1; i < series.length; i++) {
+                                            updateCPUValue(i, cpu.status.cpupercent[i - 1]);
+                                            avg += cpu.status.cpupercent[i - 1];
+                                        }
+                                        updateCPUValue(0, avg / (series.length - 1));
+                                        selector.ojChart("refresh");
                                     }
-                                    updateCPUValue(0, avg / (series.length - 1));
-                                    selector.ojChart("refresh");
                                 }
-                            }
-                        });
+                            });
+                    }
+                    else{
+                        clearInterval(cpuUpdateId);
+                    }
                 }
 
                 function updateMem() {
-                    $.ajax(
-                        {
-                            url: '/sysinfo',
-                            type: 'POST',
-                            data: JSON.stringify({"require": ["Mem.mem", "Mem.swap"]}),
-                            success: function (jsonResponse) {
-                                var mem = JSON.parse(jsonResponse).Mem.mem;
-                                var swap = JSON.parse(jsonResponse).Mem.swap;
-                                if (mem && swap) {
-                                    var selector = $("#chartmemory");
-                                    var series = selector.ojChart("option", "series");
-                                    updateMemValue(mem.free, mem.used, swap.free, swap.used);
+                    var selector = $("#chartmemory");
+                    if (selector.length > 0) {
+                        $.ajax(
+                            {
+                                url: '/sysinfo',
+                                type: 'POST',
+                                data: JSON.stringify({"require": ["Mem.mem", "Mem.swap"]}),
+                                success: function (jsonResponse) {
+                                    var mem = JSON.parse(jsonResponse).Mem.mem;
+                                    var swap = JSON.parse(jsonResponse).Mem.swap;
+                                    if (mem && swap) {
+                                        var series = selector.ojChart("option", "series");
+                                        updateMemValue(mem.free, mem.used, swap.free, swap.used);
 
-                                    selector.ojChart("refresh");
+                                        selector.ojChart("refresh");
+                                    }
                                 }
-                            }
-                        });
+                            });
+                    }
+                    else{
+                        clearInterval(memUpdateId);
+                    }
                 }
             }
             self.sysinfo = ko.observableArray(sysinfo);
-            setInterval(updateCPU, 1000);
-            setInterval(updateMem, 10000)
+            var cpuUpdateId= setInterval(updateCPU, 1000);
+            var memUpdateId = setInterval(updateMem, 10000)
         }
 
         return ChartModel;
