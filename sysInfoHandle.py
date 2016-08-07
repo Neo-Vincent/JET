@@ -52,10 +52,10 @@ class ChartHandle():
         if "chart" in require_json:
             ret = []
             if "cpu" in require_json["chart"]:
-                new_chart = ChartGenerator()
-                new_chart.set_chartId("cpu")
-                new_chart.set_chartTitle("CPU Usage")
-                new_chart.set_chartType("line")
+                mem_chart = ChartGenerator()
+                mem_chart.set_chartId("cpu")
+                mem_chart.set_chartTitle("CPU Usage")
+                mem_chart.set_chartType("line")
                 my_option = dict()
                 my_option["showAndHide"] = "withRescale"
                 my_option["myGroups"] = list(range(60, 0, -1))
@@ -77,7 +77,7 @@ class ChartHandle():
                 </table>
                 """
                 other_info = other_info % (cpu_info["name"], cpu_info["physicalCore"], cpu_info["logicalCore"])
-                new_chart.set_other_info(other_info)
+                mem_chart.set_other_info(other_info)
                 my_data = list()
                 my_data.append([0])
                 my_option["lineType"] = "curved"
@@ -85,18 +85,18 @@ class ChartHandle():
                 for i in range(cpu_info["logicalCore"]):
                     my_data.append([0])
                     my_option["seriesNames"].append("CPU_%d Usage" % i)
-                new_chart.set_option(my_option)
-                new_chart.set_data(my_data)
-                ret.append(new_chart.get_json_obj())
+                mem_chart.set_option(my_option)
+                mem_chart.set_data(my_data)
+                ret.append(mem_chart.get_json_obj())
             if "disk" in require_json["chart"]:
                 disk_info = Disk.get_disk("M")
                 for disk in disk_info:
-                    new_chart = ChartGenerator()
-                    new_chart.set_chartId("disk" + str(disk_info.index(disk)))
-                    new_chart.set_chartType("pie")
+                    mem_chart = ChartGenerator()
+                    mem_chart.set_chartId("disk" + str(disk_info.index(disk)))
+                    mem_chart.set_chartType("pie")
                     disk_total = get_adaptable_unit(disk["total"])
                     unit = disk_total[1]
-                    new_chart.set_chartTitle(disk["device"] + "  %.2f" % disk_total[0] + disk_total[1])
+                    mem_chart.set_chartTitle(disk["device"] + "  %.2f" % disk_total[0] + disk_total[1])
                     other_info = """
                     <table border="1" align="center" width="100%%">
                       <tr>
@@ -119,15 +119,61 @@ class ChartHandle():
                     """
                     other_info = other_info % (disk["device"], disk_total[0], disk_total[1],
                                                disk["fstype"], disk["mountpoint"])
-                    new_chart.set_other_info(other_info)
+                    mem_chart.set_other_info(other_info)
                     my_option = dict()
                     my_option["seriesNames"] = ["free (%s)" % unit, "used (%s)" % unit]
                     disk_free = unit_convector(disk["free"], "MB", unit)
                     disk_used = unit_convector(disk["used"], "MB", unit)
                     my_data = [[disk_free], [disk_used]]
-                    new_chart.set_data(my_data)
-                    new_chart.set_option(my_option)
-                    ret.append(new_chart.get_json_obj())
+                    mem_chart.set_data(my_data)
+                    mem_chart.set_option(my_option)
+                    ret.append(mem_chart.get_json_obj())
+            if "mem" in require_json["chart"]:
+                mem_info = Memory.get_mem_info("M")
+                swap_info = Memory.get_swap_info("M")
+                mem_chart = ChartGenerator()
+                mem_chart.set_chartId("memory")
+                mem_chart.set_chartType("bar")
+                mem_total = get_adaptable_unit(mem_info["total"])
+                unit = mem_total[1]
+                mem_chart.set_chartTitle("Memory Usage")
+                mem_free = unit_convector(mem_info["free"], "MB", unit)
+                mem_used = unit_convector(mem_info["used"], "MB", unit)
+                swap_free = unit_convector(swap_info["free"], "MB", unit)
+                swap_used = unit_convector(swap_info["used"], "MB", unit)
+                my_data = [[mem_used, swap_used], [mem_free, swap_free]]
+                other_info = """
+                <table border="1" align="center" width="100%%">
+                  <tr>
+                    <td>Memory total</td>
+                    <td>%.3f%s</td>
+                  </tr>
+                  <tr>
+                    <td>Memory available</td>
+                    <td>%.3f%s</td>
+                  </tr>
+                  <tr>
+                    <td>Memory free</td>
+                    <td>%.3f%s</td>
+                  </tr>
+                  <tr>
+                    <td>Memory used</td>
+                    <td>%.3f%s</td>
+                  </tr>
+                </table>
+                """
+                mem_chart.set_other_info(other_info % (mem_total[0], unit,
+                                                       unit_convector(mem_info["available"], "MB", unit), unit,
+                                                       mem_free, unit,
+                                                       mem_used, unit))
+                my_option = dict()
+                my_option["seriesNames"] = ["used (%s)" % unit, "free (%s)" % unit]
+                my_option["myGroups"] = ["Memory", "Swap"]
+                my_option["orientationValue"] = "horizontal"
+                my_option["stackValue"] = "on"
+                mem_chart.set_data(my_data)
+                mem_chart.set_option(my_option)
+                ret.append(mem_chart.get_json_obj())
             return "[" + ",".join(ret) + "]"
             # return json.dumps(ret)
 

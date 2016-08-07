@@ -12,9 +12,23 @@ def obj2dict(f):
 class CPU(object):
     @staticmethod
     def get_info():
-        cpu_info = {"name": platform.processor()}
+        cpu_info = dict()
+        if platform.system() == "Linux":
+            cpu_info["name"] = platform.machine()
+            '''
+            command = "cat /proc/cpuinfo"
+            all_info = subprocess.check_output(command, shell=True).strip()
+            for line in all_info.split("\n"):
+                if "model name" in line:
+                    cpu_info["name"]= re.sub(".*model name.*:", "", line, 1)
+                    break
+          '''
+        else:
+            cpu_info["name"] = platform.processor()
         cpu_info["physicalCore"] = psutil.cpu_count(False)
         cpu_info["logicalCore"] = psutil.cpu_count()
+        if not cpu_info["physicalCore"]:
+            cpu_info["physicalCore"] = cpu_info["logicalCore"]
         return cpu_info
 
     @staticmethod
@@ -122,13 +136,16 @@ class Disk(object):
         all_disk_info = []
         all_disk = psutil.disk_partitions()
         for d in all_disk:
-            this_disk = obj2dict(d)
-            thisUsage = psutil.disk_usage(d.device)
-            this_disk["total"] = unit(thisUsage.total)
-            this_disk["used"] = unit(thisUsage.used)
-            this_disk["free"] = unit(thisUsage.free)
-            this_disk["percent"] = thisUsage.percent
-            all_disk_info.append(this_disk)
+            try:
+                this_disk = obj2dict(d)
+                thisUsage = psutil.disk_usage(d.mountpoint)
+                this_disk["total"] = unit(thisUsage.total)
+                this_disk["used"] = unit(thisUsage.used)
+                this_disk["free"] = unit(thisUsage.free)
+                this_disk["percent"] = thisUsage.percent
+                all_disk_info.append(this_disk)
+            except FileNotFoundError:
+                continue
         return all_disk_info
 
     @staticmethod

@@ -4,7 +4,7 @@ define(['knockout', 'ojs/ojcore', 'data/data', 'ojs/ojknockout', 'ojs/ojmasonryl
             var self = this;
             $.ajax({
                 url: '/sysinfo',
-                data: JSON.stringify({"chart": ["cpu","disk"]}),
+                data: JSON.stringify({"chart": ["cpu", "disk", "mem"]}),
                 cache: false,
                 async: false,
                 type: "POST",
@@ -20,13 +20,13 @@ define(['knockout', 'ojs/ojcore', 'data/data', 'ojs/ojknockout', 'ojs/ojmasonryl
         console.log(sysinfo);
 
 
-        function updateCPUValue(sIndex, val){
-            var cpu=$("#chartcpu");
-            var series=cpu.ojChart("option","series");
-            if(sIndex<0 || sIndex> series.length){
+        function updateCPUValue(sIndex, val) {
+            var cpu = $("#chartcpu");
+            var series = cpu.ojChart("option", "series");
+            if (sIndex < 0 || sIndex > series.length) {
                 return null;
             }
-            if(typeof val !== 'undefined'){
+            if (typeof val !== 'undefined') {
                 if (series[sIndex].items.length >= 60) {
                     series[sIndex].items.shift();
                 }
@@ -35,44 +35,96 @@ define(['knockout', 'ojs/ojcore', 'data/data', 'ojs/ojknockout', 'ojs/ojmasonryl
             return series;
         }
 
+        function updateMemValue(memFree, memUsed, swapFree, swapUsed) {
+            var mem = $("#chartmemory");
+            var series = mem.ojChart("option", "series");
+            var name=series[0].name;
+            var step=1.;
+            if(name.indexOf("GB") >= 0){
+                step=1/1024;
+            }
+            if(name.indexOf("TB") >= 0){
+                step=1/1024/1024;
+            }
+            if(name.indexOf("KB") >= 0){
+                step=1024;
+            }
+            for (var i = 0; i < series.length; i++) {
+                if (series[i].name.indexOf("free") >= 0) {
+                    series[i].items= [memFree*step, swapFree*step];
+                }
+                if (series[i].name.indexOf("used") >= 0) {
+                    series[i].items = [memUsed*step, swapUsed*step];
+                }
+            }
+            return series;
+        }
 
         function ChartModel() {
             var self = this;
-            for(var chartInfo in sysinfo){
+            for (var chartInfo in sysinfo) {
                 if (!("myGroups" in sysinfo[chartInfo])) {
                     sysinfo[chartInfo].myGroups = [];
                 }
                 if (!("otherInfo" in sysinfo[chartInfo])) {
                     sysinfo[chartInfo].otherInfo = "";
                 }
-                if(!("showAndHide" in sysinfo[chartInfo])){
-                    sysinfo[chartInfo].showAndHide="none";
+                if (!("showAndHide" in sysinfo[chartInfo])) {
+                    sysinfo[chartInfo].showAndHide = "none";
                 }
+                if (!("orientationValue" in sysinfo[chartInfo])) {
+                    sysinfo[chartInfo].orientationValue = "vertical";
+                }
+                if (!("stackValue" in sysinfo[chartInfo])) {
+                    sysinfo[chartInfo].stackValue = "off";
+                }
+
                 function updateCPU() {
                     $.ajax(
                         {
                             url: '/sysinfo',
                             type: 'POST',
-                            data: JSON.stringify({"require":["CPU.status"]}),
+                            data: JSON.stringify({"require": ["CPU.status"]}),
                             success: function (jsonResponse) {
                                 var cpu = JSON.parse(jsonResponse).CPU;
-                                if(cpu){
-                                    var selector=$("#chartcpu");
-                                    var series=selector.ojChart("option","series");
-                                    var avg=0;
-                                    for(var i=1; i<series.length; i++){
-                                        updateCPUValue(i, cpu.status.cpupercent[i-1]);
-                                        avg+=cpu.status.cpupercent[i-1];
+                                if (cpu) {
+                                    var selector = $("#chartcpu");
+                                    var series = selector.ojChart("option", "series");
+                                    var avg = 0;
+                                    for (var i = 1; i < series.length; i++) {
+                                        updateCPUValue(i, cpu.status.cpupercent[i - 1]);
+                                        avg += cpu.status.cpupercent[i - 1];
                                     }
-                                    updateCPUValue(0, avg/(series.length-1));
+                                    updateCPUValue(0, avg / (series.length - 1));
+                                    selector.ojChart("refresh");
+                                }
+                            }
+                        });
+                }
+
+                function updateMem() {
+                    $.ajax(
+                        {
+                            url: '/sysinfo',
+                            type: 'POST',
+                            data: JSON.stringify({"require": ["Mem.mem", "Mem.swap"]}),
+                            success: function (jsonResponse) {
+                                var mem = JSON.parse(jsonResponse).Mem.mem;
+                                var swap = JSON.parse(jsonResponse).Mem.swap;
+                                if (mem && swap) {
+                                    var selector = $("#chartmemory");
+                                    var series = selector.ojChart("option", "series");
+                                    updateMemValue(mem.free, mem.used, swap.free, swap.used);
+
                                     selector.ojChart("refresh");
                                 }
                             }
                         });
                 }
             }
-           self.sysinfo = ko.observableArray(sysinfo);
-            setInterval(updateCPU,1000)
+            self.sysinfo = ko.observableArray(sysinfo);
+            setInterval(updateCPU, 1000);
+            setInterval(updateMem, 10000)
         }
 
         return ChartModel;
